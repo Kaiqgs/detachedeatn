@@ -11,66 +11,45 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
-      <h3 class="card-title h5 mb-0">Refeições do Dia</h3>
-      <div class="d-flex align-items-center gap-2">
-        <label for="dateSelect" class="form-label mb-0">Data:</label>
-        <input 
-          type="date" 
-          id="dateSelect"
-          class="form-control form-control-sm"
-          [value]="selectedDate"
-          (change)="onDateChange($event)"
-          style="width: auto;"
-        >
+  <div class="container mt-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Refeições do Dia</h5>
+        <input type="date" class="form-control w-auto" [value]="selectedDate" (change)="onDateChange($event)">
       </div>
-    </div>
-    <div class="list-group list-group-flush">
-      <div *ngFor="let meal of todaysMeals" class="list-group-item">
-        <ng-container *ngIf="editingMealId !== meal.id">
-          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
-            <div class="d-flex align-items-center gap-2">
-              <span class="badge bg-secondary">{{ formatTime(meal.timestamp) }}</span>
-              <div>
-                <div class="fw-bold">{{ meal.place }}</div>
-                <div>{{ meal.description }}</div>
+      <div class="card-body">
+        <app-meal 
+          (onSubmit)="onSubmit($event)" 
+          [initialData]="currentMeal">
+        </app-meal>
+        <div class="mt-4">
+          <div *ngIf="todaysMeals.length === 0" class="text-center text-muted">
+            Nenhuma refeição registrada neste dia.
+          </div>
+          <div *ngFor="let meal of todaysMeals" class="card mb-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h5 class="card-title">{{ meal.place }}</h5>
+                  <p class="card-text">{{ meal.description }}</p>
+                  <p class="card-text text-muted">
+                    <small>{{ formatTime(meal.datetime) }}</small>
+                    <br>
+                    <em>{{ meal.emotion }}</em>
+                  </p>
+                </div>
+                <div class="btn-group">
+                  <button class="btn btn-outline-primary btn-sm" (click)="startEditing(meal)" [disabled]="editingMealId !== null">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm" (click)="deleteMeal(meal.id!)" [disabled]="editingMealId !== null">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="btn-group">
-              <button class="btn btn-sm btn-outline-primary" (click)="startEditing(meal)" title="Editar">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-danger" (click)="deleteMeal(meal.id)" title="Excluir">
-                <i class="bi bi-trash3"></i>
-              </button>
-            </div>
           </div>
-          <div class="mt-2 text-muted small">
-            <em>{{ meal.emotion }}</em>
-          </div>
-        </ng-container>
-        
-        <ng-container *ngIf="editingMealId === meal.id">
-          <app-meal 
-            [initialData]="meal"
-            (onSubmit)="onSubmit($event)"
-            #editForm>
-          </app-meal>
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
-            <button class="btn btn-sm btn-primary" (click)="editForm.onSubmission()">
-              <i class="bi bi-check2 me-1"></i>
-              Salvar
-            </button>
-            <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditing()">
-              <i class="bi bi-x-lg me-1"></i>
-              Cancelar
-            </button>
-          </div>
-        </ng-container>
-      </div>
-      <div *ngIf="todaysMeals.length === 0" class="list-group-item text-center text-muted p-4">
-        Nenhuma refeição registrada neste dia
+        </div>
       </div>
     </div>
   </div>

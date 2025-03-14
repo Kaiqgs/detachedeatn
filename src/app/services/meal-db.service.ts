@@ -1,5 +1,18 @@
 import { Injectable } from '@angular/core';
 
+interface MealData {
+  id?: number;
+  description: string;
+  place: string;
+  emotion: string;
+  datetime: Date;
+}
+
+interface StoredMealData extends Omit<MealData, 'datetime'> {
+  id?: number;
+  timestamp: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,7 +45,22 @@ export class MealDbService {
     });
   }
 
-  async addMeal(meal: any): Promise<void> {
+  private toStoredMeal(meal: MealData): StoredMealData {
+    return {
+      ...meal,
+      timestamp: meal.datetime instanceof Date ? meal.datetime.getTime() : new Date(meal.datetime).getTime()
+    };
+  }
+
+  private toMealData(storedMeal: StoredMealData): MealData {
+    const { timestamp, ...rest } = storedMeal;
+    return {
+      ...rest,
+      datetime: new Date(timestamp)
+    };
+  }
+
+  async addMeal(meal: MealData): Promise<void> {
     if (!this.db) {
       await this.initDb();
     }
@@ -40,21 +68,14 @@ export class MealDbService {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(this.storeName, 'readwrite');
       const store = transaction.objectStore(this.storeName);
-
-      // Ensure datetime is stored as timestamp
-      const mealToStore = {
-        ...meal,
-        timestamp: meal.datetime instanceof Date ? meal.datetime.getTime() : new Date(meal.datetime).getTime()
-      };
-
-      const request = store.add(mealToStore);
+      const request = store.add(this.toStoredMeal(meal));
 
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
   }
 
-  async updateMeal(meal: any): Promise<void> {
+  async updateMeal(meal: MealData): Promise<void> {
     if (!this.db) {
       await this.initDb();
     }
@@ -62,13 +83,7 @@ export class MealDbService {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(this.storeName, 'readwrite');
       const store = transaction.objectStore(this.storeName);
-
-      const mealToStore = {
-        ...meal,
-        timestamp: meal.datetime instanceof Date ? meal.datetime.getTime() : new Date(meal.datetime).getTime()
-      };
-
-      const request = store.put(mealToStore);
+      const request = store.put(this.toStoredMeal(meal));
 
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
@@ -83,7 +98,6 @@ export class MealDbService {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(this.storeName, 'readwrite');
       const store = transaction.objectStore(this.storeName);
-
       const request = store.delete(id);
 
       transaction.oncomplete = () => resolve();
@@ -91,7 +105,7 @@ export class MealDbService {
     });
   }
 
-  async getMeals(): Promise<any[]> {
+  async getMeals(): Promise<MealData[]> {
     if (!this.db) {
       await this.initDb();
     }
@@ -101,7 +115,10 @@ export class MealDbService {
       const store = transaction.objectStore(this.storeName);
       const request = store.getAll();
 
-      transaction.oncomplete = () => resolve(request.result);
+      transaction.oncomplete = () => {
+        const storedMeals = request.result as StoredMealData[];
+        resolve(storedMeals.map(meal => this.toMealData(meal)));
+      };
       transaction.onerror = () => reject(transaction.error);
     });
   }

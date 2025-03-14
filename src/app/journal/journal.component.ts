@@ -4,6 +4,14 @@ import { MealComponent } from '../meal/meal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+interface MealData {
+  id?: number;
+  description: string;
+  place: string;
+  emotion: string;
+  datetime: Date;
+}
+
 @Component({
   selector: 'app-journal',
   standalone: true,
@@ -12,8 +20,8 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './journal.component.scss'
 })
 export class JournalComponent implements OnInit {
-  currentMeal: any = null;
-  todaysMeals: any[] = [];
+  currentMeal: MealData | undefined = undefined;
+  todaysMeals: MealData[] = [];
   editingMealId: number | null = null;
   selectedDate: string;
   availableDates: Set<string> = new Set();
@@ -36,7 +44,7 @@ export class JournalComponent implements OnInit {
       const allMeals = await this.mealDbService.getMeals();
       this.availableDates = new Set(
         allMeals.map(meal => {
-          const date = new Date(meal.timestamp);
+          const date = new Date(meal.datetime);
           return this.formatDateForInput(date);
         })
       );
@@ -49,15 +57,17 @@ export class JournalComponent implements OnInit {
   async loadMealsForDate(dateStr: string) {
     try {
       const allMeals = await this.mealDbService.getMeals();
-      const selectedDate = new Date(dateStr + 'T00:00:00');
-      const nextDay = new Date(dateStr + 'T23:59:59.999');
+      const selectedDate = new Date(dateStr);
+      selectedDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(selectedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
 
       this.todaysMeals = allMeals
         .filter(meal => {
-          const mealDate = new Date(meal.timestamp);
-          return mealDate >= selectedDate && mealDate <= nextDay;
+          const mealDate = new Date(meal.datetime);
+          return mealDate >= selectedDate && mealDate < nextDay;
         })
-        .sort((a, b) => b.timestamp - a.timestamp);
+        .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
     } catch (error) {
       console.error('Error loading meals:', error);
     }
@@ -72,7 +82,10 @@ export class JournalComponent implements OnInit {
     return this.availableDates.has(date);
   }
 
-  onSubmit(formValues: any) {
+  onSubmit(formValues: MealData) {
+    if (this.editingMealId) {
+      formValues.id = this.editingMealId;
+    }
     this.currentMeal = formValues;
     this.submit();
   }
@@ -86,7 +99,7 @@ export class JournalComponent implements OnInit {
         } else {
           await this.mealDbService.addMeal(this.currentMeal);
         }
-        this.currentMeal = null;
+        this.currentMeal = undefined;
         await this.loadAvailableDates();
       } catch (error) {
         console.error('Error saving meal:', error);
@@ -95,12 +108,14 @@ export class JournalComponent implements OnInit {
     }
   }
 
-  startEditing(meal: any) {
-    this.editingMealId = meal.id;
+  startEditing(meal: MealData) {
+    this.editingMealId = meal.id ?? null;
+    this.currentMeal = { ...meal };
   }
 
   cancelEditing() {
     this.editingMealId = null;
+    this.currentMeal = undefined;
   }
 
   async deleteMeal(id: number) {
@@ -115,8 +130,8 @@ export class JournalComponent implements OnInit {
     }
   }
 
-  formatTime(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString('pt-BR', {
+  formatTime(datetime: Date | string): string {
+    return new Date(datetime).toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit'
     });
