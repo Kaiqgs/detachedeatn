@@ -1,0 +1,54 @@
+<form [formGroup]="form" class="d-flex flex-column gap-3" (ngSubmit)="onSubmission()">
+  <div class="row g-3">
+    <div class="col-12 col-sm-6">
+      <label for="place" class="form-label">Local</label>
+      <input
+        id="place"
+        type="text"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('place')"
+        formControlName="place"
+      />
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('place')">
+        Local é obrigatório
+      </div>
+    </div>
+    <div class="col-12 col-sm-6">
+      <label for="datetime" class="form-label">Horario</label>
+      <input
+        id="datetime"
+        type="datetime-local"
+        class="form-control"
+        formControlName="datetime"
+      />
+    </div>
+    <div class="col-12">
+      <label for="description" class="form-label">Comida / Bebida</label>
+      <input
+        id="description"
+        type="text"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('description')"
+        formControlName="description"
+      />
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+        Descrição é obrigatória
+      </div>
+    </div>
+    <div class="col-12">
+      <label for="emotion" class="form-label">
+        Pensamentos, emocoes, gatilhos
+      </label>
+      <textarea
+        id="emotion"
+        rows="2"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('emotion')"
+        formControlName="emotion"
+      ></textarea>
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('emotion')">
+        Campo obrigatório
+      </div>
+    </div>
+  </div>
+</form>
