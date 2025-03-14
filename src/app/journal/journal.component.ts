@@ -3,6 +3,8 @@ import { MealDbService } from '../services/meal-db.service';
 import { MealComponent } from '../meal/meal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ToastService } from '../services/toast.service';
+import { ToastComponent } from '../components/toast/toast.component';
 
 interface MealData {
   id?: number;
@@ -15,7 +17,7 @@ interface MealData {
 @Component({
   selector: 'app-journal',
   standalone: true,
-  imports: [MealComponent, CommonModule, FormsModule],
+  imports: [MealComponent, CommonModule, FormsModule, ToastComponent],
   templateUrl: './journal.component.html',
   styleUrl: './journal.component.scss'
 })
@@ -25,8 +27,13 @@ export class JournalComponent implements OnInit {
   editingMealId: number | null = null;
   selectedDate: string;
   availableDates: Set<string> = new Set();
+  showDeleteModal = false;
+  mealToDelete: number | null = null;
 
-  constructor(private mealDbService: MealDbService) {
+  constructor(
+    private mealDbService: MealDbService,
+    private toastService: ToastService
+  ) {
     const today = new Date();
     this.selectedDate = this.formatDateForInput(today);
   }
@@ -36,40 +43,42 @@ export class JournalComponent implements OnInit {
   }
 
   private formatDateForInput(date: Date): string {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private async loadAvailableDates() {
     try {
       const allMeals = await this.mealDbService.getMeals();
       this.availableDates = new Set(
-        allMeals.map(meal => {
-          const date = new Date(meal.datetime);
-          return this.formatDateForInput(date);
-        })
+        allMeals.map(meal => this.formatDateForInput(new Date(meal.datetime)))
       );
       this.loadMealsForDate(this.selectedDate);
     } catch (error) {
       console.error('Error loading dates:', error);
+      this.toastService.show('Erro ao carregar datas', 'error');
     }
   }
 
   async loadMealsForDate(dateStr: string) {
     try {
       const allMeals = await this.mealDbService.getMeals();
-      const selectedDate = new Date(dateStr);
-      selectedDate.setHours(0, 0, 0, 0);
-      const nextDay = new Date(selectedDate);
-      nextDay.setDate(nextDay.getDate() + 1);
+      // Create start and end dates in local timezone
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const selectedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const nextDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
       this.todaysMeals = allMeals
         .filter(meal => {
           const mealDate = new Date(meal.datetime);
-          return mealDate >= selectedDate && mealDate < nextDay;
+          return mealDate >= selectedDate && mealDate <= nextDay;
         })
         .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
     } catch (error) {
       console.error('Error loading meals:', error);
+      this.toastService.show('Erro ao carregar refeições', 'error');
     }
   }
 
@@ -83,34 +92,36 @@ export class JournalComponent implements OnInit {
   }
 
   onSubmit(formValues: MealData) {
+    // If we're editing, preserve the ID
     if (this.editingMealId) {
       formValues.id = this.editingMealId;
     }
-    this.currentMeal = formValues;
-    this.submit();
+    this.submit(formValues);
   }
 
-  async submit() {
-    if (this.currentMeal) {
-      try {
-        if (this.editingMealId) {
-          await this.mealDbService.updateMeal(this.currentMeal);
-          this.editingMealId = null;
-        } else {
-          await this.mealDbService.addMeal(this.currentMeal);
-        }
-        this.currentMeal = undefined;
-        await this.loadAvailableDates();
-      } catch (error) {
-        console.error('Error saving meal:', error);
-        alert('Error saving meal. Please try again.');
+  private async submit(meal: MealData) {
+    try {
+      if (this.editingMealId) {
+        await this.mealDbService.updateMeal(meal);
+        this.editingMealId = null;
+        this.toastService.show('Refeição atualizada com sucesso', 'success');
+      } else {
+        await this.mealDbService.addMeal(meal);
+        this.toastService.show('Refeição registrada com sucesso', 'success');
       }
+      this.currentMeal = undefined;
+      await this.loadAvailableDates();
+    } catch (error) {
+      console.error('Error saving meal:', error);
+      this.toastService.show('Erro ao salvar refeição', 'error');
     }
   }
 
   startEditing(meal: MealData) {
-    this.editingMealId = meal.id ?? null;
-    this.currentMeal = { ...meal };
+    if (this.editingMealId === null) {
+      this.editingMealId = meal.id ?? null;
+      this.currentMeal = { ...meal };
+    }
   }
 
   cancelEditing() {
@@ -118,16 +129,30 @@ export class JournalComponent implements OnInit {
     this.currentMeal = undefined;
   }
 
-  async deleteMeal(id: number) {
-    if (confirm('Are you sure you want to delete this meal?')) {
-      try {
-        await this.mealDbService.deleteMeal(id);
-        await this.loadAvailableDates();
-      } catch (error) {
-        console.error('Error deleting meal:', error);
-        alert('Error deleting meal. Please try again.');
-      }
+  confirmDelete(id: number) {
+    this.mealToDelete = id;
+    this.showDeleteModal = true;
+  }
+
+  async deleteMeal() {
+    if (this.mealToDelete === null) return;
+    
+    try {
+      await this.mealDbService.deleteMeal(this.mealToDelete);
+      this.toastService.show('Refeição excluída com sucesso', 'success');
+      await this.loadAvailableDates();
+    } catch (error) {
+      console.error('Error deleting meal:', error);
+      this.toastService.show('Erro ao excluir refeição', 'error');
+    } finally {
+      this.showDeleteModal = false;
+      this.mealToDelete = null;
     }
+  }
+
+  cancelDelete() {
+    this.showDeleteModal = false;
+    this.mealToDelete = null;
   }
 
   formatTime(datetime: Date | string): string {

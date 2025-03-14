@@ -18,38 +18,78 @@
         <input type="date" class="form-control w-auto" [value]="selectedDate" (change)="onDateChange($event)">
       </div>
       <div class="card-body">
-        <app-meal 
-          (onSubmit)="onSubmit($event)" 
-          [initialData]="currentMeal">
-        </app-meal>
         <div class="mt-4">
           <div *ngIf="todaysMeals.length === 0" class="text-center text-muted">
             Nenhuma refeição registrada neste dia.
           </div>
           <div *ngFor="let meal of todaysMeals" class="card mb-3">
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <h5 class="card-title">{{ meal.place }}</h5>
-                  <p class="card-text">{{ meal.description }}</p>
-                  <p class="card-text text-muted">
-                    <small>{{ formatTime(meal.datetime) }}</small>
-                    <br>
-                    <em>{{ meal.emotion }}</em>
-                  </p>
+              <!-- Show meal form when editing -->
+              <div *ngIf="editingMealId === meal.id">
+                <app-meal 
+                  #editForm
+                  [initialData]="currentMeal"
+                  (onSubmit)="onSubmit($event)">
+                </app-meal>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                  <button class="btn btn-primary btn-sm" (click)="editForm.onSubmission()">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Salvar
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" (click)="cancelEditing()">
+                    <i class="bi bi-x-lg me-1"></i>
+                    Cancelar
+                  </button>
                 </div>
-                <div class="btn-group">
-                  <button class="btn btn-outline-primary btn-sm" (click)="startEditing(meal)" [disabled]="editingMealId !== null">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-outline-danger btn-sm" (click)="deleteMeal(meal.id!)" [disabled]="editingMealId !== null">
-                    <i class="bi bi-trash"></i>
-                  </button>
+              </div>
+              <!-- Show meal info when not editing -->
+              <div *ngIf="editingMealId !== meal.id">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h5 class="card-title">{{ meal.place }}</h5>
+                    <p class="card-text">{{ meal.description }}</p>
+                    <p class="card-text text-muted">
+                      <small>{{ formatTime(meal.datetime) }}</small>
+                      <br>
+                      <em>{{ meal.emotion }}</em>
+                    </p>
+                  </div>
+                  <div class="btn-group">
+                    <button class="btn btn-outline-primary btn-sm" (click)="startEditing(meal)" [disabled]="editingMealId !== null">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" (click)="confirmDelete(meal.id!)" [disabled]="editingMealId !== null">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast component -->
+<app-toast></app-toast>
+
+<!-- Delete confirmation modal -->
+<div *ngIf="showDeleteModal" class="modal-backdrop" (click)="cancelDelete()"></div>
+<div *ngIf="showDeleteModal" class="modal show d-block" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar exclusão</h5>
+        <button type="button" class="btn-close" (click)="cancelDelete()"></button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja excluir esta refeição?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="deleteMeal()">Excluir</button>
       </div>
     </div>
   </div>
