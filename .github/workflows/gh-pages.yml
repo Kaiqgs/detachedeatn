@@ -30,6 +30,12 @@ jobs:
       - run: npm ci
       - run: npm run build -- --configuration production
 
+      # Move browser files to root
+      - name: Move browser files to root
+        run: |
+          mv dist/detachedeatn/browser/* dist/detachedeatn/
+          rm -rf dist/detachedeatn/browser
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: github.ref == 'refs/heads/master'

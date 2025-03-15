@@ -43,7 +43,7 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "/detachedeatn/",
+              "baseHref": "/detachedeatn/browser/",
               "budgets": [
                 {
                   "type": "initial",
