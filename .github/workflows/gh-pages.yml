@@ -35,6 +35,7 @@ jobs:
         run: |
           mv dist/detachedeatn/browser/* dist/detachedeatn/
           rm -rf dist/detachedeatn/browser
+          cp dist/detachedeatn/index.html dist/detachedeatn/404.html
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
