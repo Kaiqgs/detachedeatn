@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { MealDbService } from '../services/meal-db.service';
 import { MealComponent } from '../meal/meal.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../services/toast.service';
 import { ToastComponent } from '../components/toast/toast.component';
+import { ImportExportComponent } from '../components/import-export/import-export.component';
 
 interface MealData {
   id?: number;
@@ -17,7 +18,7 @@ interface MealData {
 @Component({
   selector: 'app-journal',
   standalone: true,
-  imports: [MealComponent, CommonModule, FormsModule, ToastComponent],
+  imports: [MealComponent, CommonModule, FormsModule, ToastComponent, ImportExportComponent],
   templateUrl: './journal.component.html',
   styleUrl: './journal.component.scss'
 })
@@ -29,6 +30,8 @@ export class JournalComponent implements OnInit {
   availableDates: Set<string> = new Set();
   showDeleteModal = false;
   mealToDelete: number | null = null;
+
+  @ViewChild(ImportExportComponent) importExportModal!: ImportExportComponent;
 
   constructor(
     private mealDbService: MealDbService,
@@ -160,5 +163,9 @@ export class JournalComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  showImportExport() {
+    this.importExportModal.show();
   }
 }

@@ -13,9 +13,24 @@
 
   <div class="container mt-4">
     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Refeições do Dia</h5>
-        <input type="date" class="form-control w-auto" [value]="selectedDate" (change)="onDateChange($event)">
+      <div class="card-header p-3">
+        <!-- Mobile view: stacked -->
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+          <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 gap-sm-3">
+            <h2 class="h5 mb-0">Refeições do Dia</h2>
+            <input 
+              type="date" 
+              class="form-control form-control-sm"
+              style="min-width: 140px;" 
+              [value]="selectedDate"
+              (change)="onDateChange($event)"
+              [class.bg-light]="!isDateAvailable(selectedDate)">
+          </div>
+          <button class="btn btn-outline-primary btn-sm" (click)="showImportExport()">
+            <i class="bi bi-arrow-down-up me-1"></i>
+            <span>Importar/Exportar</span>
+          </button>
+        </div>
       </div>
       <div class="card-body">
         <div class="mt-4">
@@ -72,9 +87,6 @@
   </div>
 </div>
 
-<!-- Toast component -->
-<app-toast></app-toast>
-
 <!-- Delete confirmation modal -->
 <div *ngIf="showDeleteModal" class="modal-backdrop" (click)="cancelDelete()"></div>
 <div *ngIf="showDeleteModal" class="modal show d-block" tabindex="-1">
@@ -94,3 +106,9 @@
     </div>
   </div>
 </div>
+
+<!-- Import/Export Modal -->
+<app-import-export #importExportModal></app-import-export>
+
+<!-- Toast component -->
+<app-toast></app-toast>
